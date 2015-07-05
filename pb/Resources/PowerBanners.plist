@@ -70,6 +70,67 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
+			<string>Customize</string>
+		</dict>
+		<dict>
+			<key>PostNotification</key>
+			<string>com.joshdoctors.powerbanners/settingschanged</string>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.joshdoctors.powerbanners</string>
+			<key>key</key>
+			<string>useCustomTitle</string>
+			<key>label</key>
+			<string>Custom title?</string>
+		</dict>
+		<dict>
+            <key>cell</key>             <string>PSEditTextCell</string>
+            <key>defaults</key>         <string>com.joshdoctors.powerbanners</string>
+            <key>key</key>              <string>customTitleText</string>
+            <key>label</key>            <string>Title: </string>
+            <key>PostNotification</key> <string>com.joshdoctors.powerbanners/settingschanged</string>
+        </dict>
+        <dict>
+			<key>PostNotification</key>
+			<string>com.joshdoctors.powerbanners/settingschanged</string>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.joshdoctors.powerbanners</string>
+			<key>key</key>
+			<string>useCustomMessage</string>
+			<key>label</key>
+			<string>Custom message?**</string>
+		</dict>
+		<dict>
+            <key>cell</key>             <string>PSEditTextCell</string>
+            <key>defaults</key>         <string>com.joshdoctors.powerbanners</string>
+            <key>key</key>              <string>customMessageText</string>
+            <key>label</key>            <string>Message: </string>
+            <key>PostNotification</key> <string>com.joshdoctors.powerbanners/settingschanged</string>
+        </dict>
+        <dict>
+            <key>cell</key>             <string>PSButtonCell</string>
+            <key>label</key>            <string>Save</string>
+            <key>action</key>           <string>save</string>
+        </dict>
+        <dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>**Use '%batt' in the message text field in order to grab the devices battery level. Example text: 'Oh no, my device only has %batt % remaining!'.</string>
+			<key>isStaticText</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
 			<string>About</string>
 		</dict>
 		<dict>

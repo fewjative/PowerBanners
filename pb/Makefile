@@ -4,7 +4,7 @@ include theos/makefiles/common.mk
 BUNDLE_NAME = PowerBanners
 PowerBanners_FILES = PowerBanners.mm
 PowerBanners_INSTALL_PATH = /Library/PreferenceBundles
-PowerBanners_FRAMEWORKS = UIKit
+PowerBanners_FRAMEWORKS = UIKit Social
 PowerBanners_PRIVATE_FRAMEWORKS = Preferences
 
 include $(THEOS_MAKE_PATH)/bundle.mk

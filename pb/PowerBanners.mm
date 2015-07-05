@@ -1,6 +1,9 @@
 #import <Preferences/Preferences.h>
+#import <Social/SLComposeViewController.h>
+#import <Social/SLServiceTypes.h>
+#import <UIKit/UIKit.h>
 
-@interface PowerBannersListController: PSListController {
+@interface PowerBannersListController: PSEditableListController {
 }
 @end
 
@@ -13,7 +16,16 @@
 
 }
 
+-(id)_editButtonBarItem{
+	return [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCompose target:self action:@selector(composeTweet:)];
+}
 
+-(void)composeTweet:(id)sender
+{
+	SLComposeViewController * composeController = [SLComposeViewController composeViewControllerForServiceType:SLServiceTypeTwitter];
+	[composeController setInitialText:@"I downloaded #PowerBanners by @Fewjative and my low power alerts are now awesome!"];
+	[self presentViewController:composeController animated:YES completion:nil];
+}
 
 -(void)twitter {
 
@@ -21,5 +33,10 @@
 
 }
 
-@end
+-(void)save
+{
+    [self.view endEditing:YES];
+}
 
+
+@end

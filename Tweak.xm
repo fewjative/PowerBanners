@@ -82,6 +82,10 @@ static BOOL enableTweak = YES;
 static BOOL vibrateSwitch = YES;
 static NSInteger battery_level=100;
 static BOOL respringSwitch = YES;
+static NSString* customTitleText = @"Low Battery";
+static NSString* customMessageText = @"low battery remaining";
+static BOOL useCustomTitle = NO;
+static BOOL useCustomMessage = NO;
 
 %hook SBAlertItemsController
 
@@ -117,8 +121,19 @@ static BOOL respringSwitch = YES;
 		battery_level = (int)[[objc_getClass("SBUIController") sharedInstance] batteryCapacityAsPercentage];
 
 	id request = [[[%c(BBBulletinRequest) alloc] init] autorelease];
-	[request setTitle: @"Low Battery"];
-	NSString *str = [NSString stringWithFormat:@"%ld%% of battery remaining",(long)battery_level];
+	if(!useCustomTitle)
+		[request setTitle: @"Low Battery"];
+	else
+		[request setTitle: customTitleText];
+
+	NSString * str;
+	if(!useCustomMessage) {
+		str = [NSString stringWithFormat:@"%ld%% of battery remaining",(long)battery_level];
+
+	} else {
+		NSString * battery = [NSString stringWithFormat:@"%ld%",(long)battery_level];
+		str = [customMessageText stringByReplacingOccurrencesOfString:@"%batt" withString:battery];
+	}
 	[request setMessage:str];
 	[request setSectionID: @"com.apple.Preferences"];
 	[request setDefaultAction: [%c(BBAction) action]];
@@ -158,8 +173,21 @@ static BOOL respringSwitch = YES;
 %new - (void)displayBanner {
 
 	id request = [[[%c(BBBulletinRequest) alloc] init] autorelease];
-	[request setTitle: @"Low Battery"];
-	NSString *str = [NSString stringWithFormat:@"%ld%% of battery remaining",(long)battery_level];
+
+	if(!useCustomTitle)
+		[request setTitle: @"Low Battery"];
+	else
+		[request setTitle: customTitleText];
+
+	NSString * str;
+	if(!useCustomMessage) {
+		str = [NSString stringWithFormat:@"%ld%% of battery remaining",(long)battery_level];
+
+	} else {
+		NSString * battery = [NSString stringWithFormat:@"%ld%",(long)battery_level];
+		str = [customMessageText stringByReplacingOccurrencesOfString:@"%batt" withString:battery];
+	}
+
 	[request setMessage:str];
 	[request setSectionID: @"com.apple.Preferences"];
 	[request setDefaultAction: [%c(BBAction) action]];
@@ -185,8 +213,12 @@ static void loadPrefs()
     if(prefs)
     {
         enableTweak = ([prefs objectForKey:@"enableTweak"] ? [[prefs objectForKey:@"enableTweak"] boolValue] : enableTweak);
-    	vibrateSwitch= ([prefs objectForKey:@"vibrateSwitch"] ? [[prefs objectForKey:@"vibrateSwitch"] boolValue] : vibrateSwitch);	
-		respringSwitch= ([prefs objectForKey:@"respringSwitch"] ? [[prefs objectForKey:@"respringSwitch"] boolValue] : respringSwitch);	
+    	vibrateSwitch= ([prefs objectForKey:@"vibrateSwitch"] ? [[prefs objectForKey:@"vibrateSwitch"] boolValue] : vibrateSwitch);
+		respringSwitch= ([prefs objectForKey:@"respringSwitch"] ? [[prefs objectForKey:@"respringSwitch"] boolValue] : respringSwitch);
+		useCustomMessage = ([prefs objectForKey:@"useCustomMessage"] ? [[prefs objectForKey:@"useCustomMessage"] boolValue] : useCustomMessage);
+		useCustomTitle = ([prefs objectForKey:@"useCustomTitle"] ? [[prefs objectForKey:@"useCustomTitle"] boolValue] : useCustomTitle);
+		customTitleText = (NSString*)CFPreferencesCopyAppValue(CFSTR("customTitleText"), CFSTR("com.joshdoctors.powerbanners")) ?: @"Low Battery";
+		customMessageText = (NSString*)CFPreferencesCopyAppValue(CFSTR("customMessageText"), CFSTR("com.joshdoctors.powerbanners")) ?: @"low battery remaining.";
     }
     [prefs release];
 }
