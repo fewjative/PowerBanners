@@ -12,6 +12,7 @@
 + (id)action;
 + (id)sharedInstance;
 - (void)observer:(id)arg1 addBulletin:(id)arg2 forFeed:(NSInteger)arg3;
+- (void)observer:(id)arg1 addBulletin:(id)arg2 forFeed:(NSInteger)arg3 playLightsAndSirens:(BOOL)arg4 withReply:(id)arg5;
 - (void)_replaceIntervalElapsed;
 - (void)_dismissIntervalElapsed;
 - (BOOL)containsAttachments;
@@ -73,16 +74,72 @@
 -(void)lockBarUnlocked:(id)unlocked;
 @end
 
+@interface SBAlertItemsController
+-(void)displayBanner;
+@end
+
 static BOOL enableTweak = YES;
 static BOOL vibrateSwitch = YES;
 static NSInteger battery_level=100;
-static BOOL displayBanner = NO;
 static BOOL respringSwitch = YES;
 
-%hook SBStatusBarStateAggregator
+%hook SBAlertItemsController
 
-- (void)_updateBatteryItems
-{
+- (void)activateAlertItem:(id)item
+{	
+	if(enableTweak)
+	{
+		if ([item isKindOfClass:%c(SBLowPowerAlertItem)])
+		{
+			SBLockScreenManager *lockscreenManager = (SBLockScreenManager *)[objc_getClass("SBLockScreenManager") sharedInstance];
+
+			if (!lockscreenManager.isUILocked)
+			{
+				[self displayBanner];
+			}
+			
+			return;	
+		}
+		else
+			%orig;
+	}
+	else
+		%orig;
+}
+
+%new - (void)displayBanner {
+
+	if([[[UIDevice currentDevice] systemVersion] floatValue] < 8.0)
+	{
+		battery_level = (int)[[objc_getClass("SBUIController") sharedInstance] curvedBatteryCapacityAsPercentage];
+	}
+	else
+		battery_level = (int)[[objc_getClass("SBUIController") sharedInstance] batteryCapacityAsPercentage];
+
+	id request = [[[%c(BBBulletinRequest) alloc] init] autorelease];
+	[request setTitle: @"Low Battery"];
+	NSString *str = [NSString stringWithFormat:@"%ld%% of battery remaining",(long)battery_level];
+	[request setMessage:str];
+	[request setSectionID: @"com.apple.Preferences"];
+	[request setDefaultAction: [%c(BBAction) action]];
+
+	id ctrl = [%c(SBBulletinBannerController) sharedInstance];
+
+	if([ctrl respondsToSelector:@selector(observer:addBulletin:forFeed:playLightsAndSirens:withReply:)]) {
+		[ctrl observer:nil addBulletin:request forFeed:2 playLightsAndSirens:YES withReply:nil];
+	} else {
+		[ctrl observer:nil addBulletin:request forFeed:2];
+	}
+
+	if(vibrateSwitch)
+			AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
+}
+
+%end
+
+%hook SBLockScreenViewController
+
+-(void)finishUIUnlockFromSource:(int)source {
 	%orig;
 
 	if([[[UIDevice currentDevice] systemVersion] floatValue] < 8.0)
@@ -92,107 +149,33 @@ static BOOL respringSwitch = YES;
 	else
 		battery_level = (int)[[objc_getClass("SBUIController") sharedInstance] batteryCapacityAsPercentage];
 
-	SBLockScreenManager *lockscreenManager = (SBLockScreenManager *)[objc_getClass("SBLockScreenManager") sharedInstance];
-
-        if(!lockscreenManager.isUILocked) 
-        {
-
-			if(displayBanner && enableTweak)
-			{
-				id request = [[[%c(BBBulletinRequest) alloc] init] autorelease];
-				[request setTitle: @"Low Battery"];
-				NSString *str = [NSString stringWithFormat:@"%ld%% of battery remaining",(long)battery_level];
-				[request setMessage:str];
-				[request setSectionID: @"com.apple.Preferences"];
-				[request setDefaultAction: [%c(BBAction) action]];
-
-				id ctrl = [%c(SBBulletinBannerController) sharedInstance];
-				//[[%c(SBBannerController) sharedInstance] _dismissIntervalElapsed];
-				[ctrl observer:nil addBulletin:request forFeed:2];
-
-				if(vibrateSwitch)
-						AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
-				//[[%c(SBBannerController) sharedInstance] _replaceIntervalElapsed];
-				displayBanner  = NO;
-			}
-        }
-}
-
-%end
-
-%hook SBAlertItemsController
-
-- (void)activateAlertItem:(id)item
-{
-
-	/*id request = [[[%c(BBBulletinRequest) alloc] init] autorelease];
-				[request setTitle: @"Low Battery"];
-				NSString *str = [NSString stringWithFormat:@"%ld%% of battery remaining",(long)100];
-				[request setMessage:str];
-				[request setSectionID: @"com.apple.Preferences"];
-				[request setDefaultAction: [%c(BBAction) action]];
-
-				id ctrl = [%c(SBBulletinBannerController) sharedInstance];
-				//[[%c(SBBannerController) sharedInstance] _dismissIntervalElapsed];
-			    [ctrl observer:nil addBulletin:request forFeed:2];
-			  //  [[%c(SBBannerController) sharedInstance] _replaceIntervalElapsed];
-				NSLog(@"attempting to release");
-				// BBBulletin-handleResponse: Error: could not find action for button with ID "(null)"
-				//[request release];
-	return;*/
-
-	
-	if(enableTweak)
-	{
-	
-		if ([item isKindOfClass:%c(SBLowPowerAlertItem)])
-		{
-			SBLockScreenManager *lockscreenManager = (SBLockScreenManager *)[objc_getClass("SBLockScreenManager") sharedInstance];
-
-			if (!lockscreenManager.isUILocked)
-			{
-				if(vibrateSwitch)
-					AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
-
-				id request = [[[%c(BBBulletinRequest) alloc] init] autorelease];
-				[request setTitle: @"Low Battery"];
-				NSString *str = [NSString stringWithFormat:@"%ld%% of battery remaining",(long)battery_level];
-				[request setMessage:str];
-				[request setSectionID: @"com.apple.Preferences"];
-				[request setDefaultAction: [%c(BBAction) action]];
-
-				id ctrl = [%c(SBBulletinBannerController) sharedInstance];
-				//[[%c(SBBannerController) sharedInstance] _dismissIntervalElapsed];
-			    [ctrl observer:nil addBulletin:request forFeed:2];
-			    //[[%c(SBBannerController) sharedInstance] _replaceIntervalElapsed];
-			}
-			else
-				displayBanner = YES;
-			
-			return;	
-		}
-		else
-			%orig;
-
-	}
-	else
-		%orig;
-}
-
-%end
-
-%hook SpringBoard
-
--(void)applicationDidFinishLaunching:(id)application {
-   	%orig;
 	if(respringSwitch && battery_level <=20.0 && enableTweak)
 	{
-		displayBanner = YES;
+		[self displayBanner];
 	}
-	else
-		displayBanner = NO;
-
 }
+
+%new - (void)displayBanner {
+
+	id request = [[[%c(BBBulletinRequest) alloc] init] autorelease];
+	[request setTitle: @"Low Battery"];
+	NSString *str = [NSString stringWithFormat:@"%ld%% of battery remaining",(long)battery_level];
+	[request setMessage:str];
+	[request setSectionID: @"com.apple.Preferences"];
+	[request setDefaultAction: [%c(BBAction) action]];
+
+	id ctrl = [%c(SBBulletinBannerController) sharedInstance];
+
+	if([ctrl respondsToSelector:@selector(observer:addBulletin:forFeed:playLightsAndSirens:withReply:)]) {
+		[ctrl observer:nil addBulletin:request forFeed:2 playLightsAndSirens:YES withReply:nil];
+	} else {
+		[ctrl observer:nil addBulletin:request forFeed:2];
+	}
+
+	if(vibrateSwitch)
+			AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
+}
+
 %end
 
 static void loadPrefs() 

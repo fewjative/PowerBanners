@@ -1,0 +1,9 @@
+Package: com.joshdoctors.powerbanners
+Name: PowerBanners
+Depends: mobilesubstrate
+Version: 0.0.1
+Architecture: iphoneos-arm
+Description: This tweak changes power alerts into unobtrusive notification banners(such as the warnings for low battery). This tweak is meant for iOS7 and iOS8 devices and is compatible with 64 bit devices aswell.
+Maintainer: Josh Doctors
+Author: Josh Doctors
+Section: Tweaks
