@@ -86,6 +86,7 @@ static NSString* customTitleText = @"Low Battery";
 static NSString* customMessageText = @"low battery remaining";
 static BOOL useCustomTitle = NO;
 static BOOL useCustomMessage = NO;
+static BOOL displayBanner = NO;
 
 %hook SBAlertItemsController
 
@@ -152,10 +153,23 @@ static BOOL useCustomMessage = NO;
 
 %end
 
+%hook SpringBoard
+
+-(void)applicationDidFinishLaunching:(id)application {
+
+	%orig;
+	displayBanner = YES;
+}
+
+%end
+
 %hook SBLockScreenViewController
 
 -(void)finishUIUnlockFromSource:(int)source {
 	%orig;
+
+	if(!displayBanner)
+		return;
 
 	if([[[UIDevice currentDevice] systemVersion] floatValue] < 8.0)
 	{
@@ -168,6 +182,8 @@ static BOOL useCustomMessage = NO;
 	{
 		[self displayBanner];
 	}
+
+	displayBanner = NO;
 }
 
 %new - (void)displayBanner {
