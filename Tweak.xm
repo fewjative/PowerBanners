@@ -1,6 +1,6 @@
 #import <AudioToolbox/AudioToolbox.h>
 #import <QuartzCore/QuartzCore.h>
-//#import <UIKit/UIKit.h>
+#import <UIKit/UIKit.h>
 
 @interface NSObject ()
 @property (assign,nonatomic) UIEdgeInsets clippingInsets;
@@ -57,6 +57,42 @@
 @interface SBBannerController : NSObject
 + (id)sharedInstance;
 - (void)_presentBannerView:(id)view;
+-(void)dismissBannerWithAnimation:(BOOL)val reason:(NSInteger)val2;
+@end
+
+@interface BBAction : NSObject
++(BBAction*)actionWithIdentifier:(NSString*)identifier;
+-(void)setActionType:(NSInteger)val;
+-(void)setShouldDismissBulletin:(BOOL)val;
+-(void)setAuthenticationRequired:(BOOL)val;
+@end
+
+@interface BBButton
++(BBButton*)buttonWithTitle:(NSString*)str action:(BBAction*)action identifier:(NSString*)str;
+@end
+
+@interface BBBulletinRequest : NSObject
+-(NSString*)sectionID;
+-(void)setButtons:(NSMutableArray*)val;
+-(void)setSupplementaryActionsByLayout:(NSMutableDictionary*)supplementaryActions;
+@end
+
+@interface SBBulletinBannerItem : NSObject
+-(BBBulletinRequest*)seedBulletin;
+@end
+
+@interface SBUIBannerContext : NSObject
+-(SBBulletinBannerItem*)item;
+@end
+
+@interface SBBannerContextView : NSObject
+-(SBUIBannerContext*)bannerContext;
+@end
+
+@interface SBBannerContainerViewController : NSObject
+-(BBBulletinRequest*)_bulletin;
+-(BOOL)canPullDown;
+-(SBBannerContextView*)bannerContextView;
 @end
 
 @interface SBLockScreenManager : NSObject // iOS 7
@@ -78,6 +114,11 @@
 -(void)displayBanner;
 @end
 
+@interface _CDBatterySaver : NSObject
++(id)batterySaver;
+-(int)setMode:(int)arg;
+@end
+
 static BOOL enableTweak = YES;
 static BOOL vibrateSwitch = YES;
 static NSInteger battery_level=100;
@@ -87,6 +128,7 @@ static NSString* customMessageText = @"low battery remaining";
 static BOOL useCustomTitle = NO;
 static BOOL useCustomMessage = NO;
 static BOOL displayBanner = NO;
+static SBBulletinBannerItem * bi = nil;
 
 %hook SBAlertItemsController
 
@@ -148,7 +190,7 @@ static BOOL displayBanner = NO;
 	}
 
 	if(vibrateSwitch)
-			AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
+		AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
 }
 
 %end
@@ -217,7 +259,78 @@ static BOOL displayBanner = NO;
 	}
 
 	if(vibrateSwitch)
-			AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
+		AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
+}
+
+%end
+
+%hook SBBannerButtonViewController
+
+-(void)setButtonTitles:(id)arg {
+
+	if(!enableTweak)
+	{
+		%orig;
+		return;
+	}
+
+	BBBulletinRequest * br = [bi seedBulletin];
+
+	if( [[br sectionID] isEqualToString:@"com.apple.Preferences"] )
+	{
+		NSLog(@"[PowerBanners]Setting custom buttons.");
+		NSArray * titles = [NSArray arrayWithObjects:@"Low Power Mode", nil];
+		%orig(titles);
+	}
+	else
+	{
+		%orig;
+	}
+}
+
+%end
+
+%hook SBBannerContainerViewController
+
+-(id)_bannerItem {
+	id orig = %orig;
+
+	if( orig )
+		bi = orig;
+
+	return orig;
+}
+
+-(void)_handleBannerTapGesture:(id)gesture withActionContext:(id)context {
+
+	if([[[UIDevice currentDevice] systemVersion] floatValue] >= 9.0)
+	{
+		if( [[[self _bulletin] sectionID] isEqualToString:@"com.apple.Preferences"] )
+			return;
+		else
+			%orig;
+	}
+	else
+		%orig;
+}
+
+-(void)buttonViewController:(id)ctrl didSelectButtonAtIndex:(NSInteger)index {
+	
+	if(!enableTweak)
+	{
+		%orig;
+		return;
+	}
+
+	BBBulletinRequest * br = [bi seedBulletin];
+
+	if( [[br sectionID] isEqualToString:@"com.apple.Preferences"] )
+	{
+		[[%c(_CDBatterySaver) batterySaver] setMode:1];
+		[[%c(SBBannerController) sharedInstance] dismissBannerWithAnimation:YES reason:0];
+	}
+	else
+		%orig;
 }
 
 %end
